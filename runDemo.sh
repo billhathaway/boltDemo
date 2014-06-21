@@ -4,7 +4,7 @@ echo "Building the demo"
 go build
 
 echo "Running the server in background"
-./boltdbdemo -db data/demo.db -e  &
+./boltDemo -db data/demo.db -e  &
 
 sleep 1
 
@@ -47,4 +47,4 @@ curl "http://localhost:9999/queues"
 echo
 
 echo "killing the server"
-pkill -f boltdbdemo
+pkill -f boltDemo
