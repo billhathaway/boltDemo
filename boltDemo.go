@@ -26,6 +26,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"os/signal"
 	"strconv"
 	"sync"
 	"time"
@@ -291,6 +292,18 @@ func index(w http.ResponseWriter, r *http.Request) {
 
 `)
 }
+
+func signalHandler() {
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan)
+	<-sigChan
+	if queueDB != nil {
+		log.Println("closing DB")
+		queueDB.Close()
+	}
+	os.Exit(0)
+}
+
 func startServer(dbPath string, port string, ephemeral bool) error {
 	var err error
 
@@ -298,6 +311,7 @@ func startServer(dbPath string, port string, ephemeral bool) error {
 	if err != nil {
 		log.Fatalf("Problem opening %s - %s\n", dbPath, err.Error())
 	}
+	go signalHandler()
 
 	if ephemeral {
 		os.Remove(dbPath)
