@@ -94,6 +94,7 @@ func queueInfo(w http.ResponseWriter, r *http.Request) {
 	queueName := vars["queue"]
 	queue, exists := queues[queueName]
 	if !exists {
+		w.WriteHeader(http.StatusBadRequest)
 		encoder.Encode(Response{Status: "error", Message: "queue does not exist"})
 		return
 	}
@@ -148,12 +149,14 @@ func receiveMessage(w http.ResponseWriter, r *http.Request) {
 			return queueBucket.Put([]byte(queueName), data)
 		})
 		if updateErr != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			encoder.Encode(ReceiveResponse{Status: "error", Message: err.Error(), Messages: messages})
 			log.Fatalf("unable to update queue record in DB queue=%s error=%s\n", queueName, updateErr.Error())
 		}
 	}
 
 	if err != nil && err != limitReachedError {
-
+		w.WriteHeader(http.StatusInternalServerError)
 		encoder.Encode(ReceiveResponse{Status: "error", Message: err.Error(), Messages: messages})
 		return
 	}
@@ -167,11 +170,13 @@ func sendMessage(w http.ResponseWriter, r *http.Request) {
 	queueName := vars["queue"]
 	queue, exists := queues[queueName]
 	if !exists {
+		w.WriteHeader(http.StatusBadRequest)
 		encoder.Encode(Response{Status: "error", Message: "queue does not exist"})
 		return
 	}
 	message := r.FormValue("message")
 	if message == "" {
+		w.WriteHeader(http.StatusBadRequest)
 		encoder.Encode(Response{Status: "error", Message: "message must not be empty"})
 		return
 	}
@@ -194,6 +199,7 @@ func sendMessage(w http.ResponseWriter, r *http.Request) {
 
 	})
 	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
 		encoder.Encode(Response{Status: "error", Message: err.Error()})
 		return
 	}
@@ -207,10 +213,12 @@ func createQueue(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	queueName := vars["queue"]
 	if queueName == "" {
+		w.WriteHeader(http.StatusBadRequest)
 		encoder.Encode(Response{Status: "error", Message: "queue parameter must not be empty"})
 		return
 	}
 	if _, exists := queues[queueName]; exists {
+		w.WriteHeader(http.StatusBadRequest)
 		encoder.Encode(Response{Status: "error", Message: "a queue with that name already exists"})
 		return
 	}
@@ -228,6 +236,7 @@ func createQueue(w http.ResponseWriter, r *http.Request) {
 		return queueBucket.Put([]byte(queueName), data)
 	})
 	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
 		encoder.Encode(Response{Status: "error", Message: err.Error()})
 		return
 	}
@@ -240,10 +249,12 @@ func deleteQueue(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	queueName := vars["queue"]
 	if queueName == "" {
+		w.WriteHeader(http.StatusBadRequest)
 		encoder.Encode(Response{Status: "error", Message: "queue parameter must not be empty"})
 		return
 	}
 	if _, exists := queues[queueName]; !exists {
+		w.WriteHeader(http.StatusInternalServerError)
 		encoder.Encode(Response{Status: "error", Message: "queue does not exists"})
 		return
 	}
@@ -254,6 +265,7 @@ func deleteQueue(w http.ResponseWriter, r *http.Request) {
 	})
 	// TODO: should not return here, should also try to delete the message bucket as well
 	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
 		encoder.Encode(Response{Status: "error", Message: "deleting queue " + err.Error()})
 		return
 	}
@@ -262,6 +274,7 @@ func deleteQueue(w http.ResponseWriter, r *http.Request) {
 		return tx.DeleteBucket([]byte(queueName + "-messages"))
 	})
 	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
 		encoder.Encode(Response{Status: "error", Message: "deleting message bucket " + err.Error()})
 		return
 	}
