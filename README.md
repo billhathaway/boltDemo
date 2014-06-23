@@ -1,4 +1,5 @@
 A demo program used to learn how to work with Bolt key/value store.  
+[![Build Status](https://travis-ci.org/billhathaway/boltDemo.svg?branch=master)](https://travis-ci.org/billhathaway/boltDemo)  
 
 This implements a very simple message queue.  Operations are:
 * list queues
