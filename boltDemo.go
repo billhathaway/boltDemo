@@ -320,7 +320,7 @@ func signalHandler() {
 func startServer(dbPath string, port string, ephemeral bool) error {
 	var err error
 
-	queueDB, err = bolt.Open(dbPath, dbPermission)
+	queueDB, err = bolt.Open(dbPath, dbPermission,nil)
 	if err != nil {
 		log.Fatalf("Problem opening %s - %s\n", dbPath, err.Error())
 	}
